@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Impact - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; padding: 40px; color: #1e293b; }
+        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+        h1 { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+        .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        h2 { font-size: 16px; margin-bottom: 20px; text-transform: uppercase; color: #64748b; }
+        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 12px; font-weight: 700; color: #94a3b8; }
+        input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s; }
+        input:focus { border-color: #3b82f6; }
+        button { background: #1e293b; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        .success-msg { color: #10b981; font-size: 14px; font-weight: 600; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="material-icons">settings</i> Admin Control Panel</h1>
+
+        <section class="card">
+            <h2>Global Analytics Override</h2>
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>Total AI Impact</label>
+                    <input type="number" id="g-impact" value="31460000">
+                </div>
+                <div class="input-group">
+                    <label>Total Replaced</label>
+                    <input type="number" id="g-replaced" value="0">
+                </div>
+                <div class="input-group">
+                    <label>New Jobs Created</label>
+                    <input type="number" id="g-created" value="0">
+                </div>
+            </div>
+            <button style="margin-top:20px; background:#3b82f6;" onclick="updateGlobal()">Broadcast Global Override</button>
+            <div id="g-success" class="success-msg">Global stats updated!</div>
+        </section>
+
+        <section class="card">
+            <h2>Country Metrics Calibration</h2>
+            <div class="form-grid">
+                <div class="input-group" style="grid-column: span 3;">
+                    <label>Select Country</label>
+                    <select id="c-code">
+                        <option value="US">United States</option>
+                        <option value="CN">China</option>
+                        <option value="IN">India</option>
+                        <option value="LK">Sri Lanka</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="CA">Canada</option>
+                        <option value="AU">Australia</option>
+                        <option value="DE">Germany</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Baseline Jobs</label>
+                    <input type="number" id="c-baseline" value="0">
+                </div>
+                <div class="input-group">
+                    <label>AI Exposure</label>
+                    <input type="number" id="c-exposed" value="0">
+                </div>
+                <div class="input-group">
+                    <label>Displaced</label>
+                    <input type="number" id="c-displaced" value="0">
+                </div>
+            </div>
+            <button style="margin-top:20px;" onclick="updateCountry()">Update Regional Data</button>
+            <div id="c-success" class="success-msg">Country metrics updated!</div>
+        </section>
+
+        <section class="card">
+            <h2>Manual News Injection</h2>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div class="input-group">
+                    <label>Headline</label>
+                    <input type="text" id="n-title" placeholder="Enter shocking AI job news...">
+                </div>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Country Code (US/IN/CN)</label>
+                        <input type="text" id="n-country" value="US">
+                    </div>
+                    <div class="input-group">
+                        <label>Type</label>
+                        <select id="n-type">
+                            <option value="create">New Job / Creation</option>
+                            <option value="layoff">Replaced / Layoff</option>
+                        </select>
+                    </div>
+                     <div class="input-group">
+                        <label>Category (Theme)</label>
+                        <input type="text" id="n-theme" value="IMPACT">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Source / Link</label>
+                    <input type="text" id="n-link" value="#" placeholder="http://...">
+                </div>
+                <button style="background:#ef4444;" onclick="injectNews()">Push to Live Stream</button>
+                <div id="n-success" class="success-msg">News headline injected!</div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const socket = io();
+
+        function updateGlobal() {
+            socket.emit('admin_update_global', {
+                totalExposed: parseInt(document.getElementById('g-impact').value),
+                currentDisplaced: parseInt(document.getElementById('g-replaced').value),
+                newJobsCreated: parseInt(document.getElementById('g-created').value)
+            });
+            showSuccess('g-success');
+        }
+
+        function updateCountry() {
+            socket.emit('admin_update_country', {
+                code: document.getElementById('c-code').value,
+                total: parseInt(document.getElementById('c-baseline').value),
+                exposed: parseInt(document.getElementById('c-exposed').value),
+                displaced: parseInt(document.getElementById('c-displaced').value),
+                created: 0 // Simplification for now
+            });
+            showSuccess('c-success');
+        }
+
+        function injectNews() {
+            socket.emit('admin_inject_news', {
+                title: document.getElementById('n-title').value,
+                country: document.getElementById('n-country').value,
+                type: document.getElementById('n-type').value,
+                theme: document.getElementById('n-theme').value,
+                src: "Manual Alert",
+                time: "Just Now",
+                link: document.getElementById('n-link').value
+            });
+            showSuccess('n-success');
+            document.getElementById('n-title').value = '';
+        }
+
+        function showSuccess(id) {
+            const el = document.getElementById(id);
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>
