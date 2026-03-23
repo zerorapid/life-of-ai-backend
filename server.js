@@ -6,8 +6,6 @@ const path = require('path');
 
 const session = require('express-session');
 
-const session = require('express-session');
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
